@@ -12,8 +12,16 @@ PostgreSQL 数据库中文手册
    part2/index
 
 
-法律声明
-==================
+关于
+-------------------
+
+本文档是 `PostgreSQL Documentation <http://www.postgresql.org/docs/>`_ 的中文翻译版，
+译者为 `黄健宏（huangz） <http://huangz.me>`_ ，
+追踪更新请关注这个 GitHub ： https://github.com/huangz1990/postgresql-doc-cn 。
+
+
+原文声明
+------------------
 
 PostgreSQL is Copyright © 1996-2014 by the PostgreSQL Global Development Group.
 
