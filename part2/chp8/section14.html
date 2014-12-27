@@ -1,0 +1,511 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>JSON 类型 &mdash; PostgreSQL 数据库中文手册</title>
+    
+    <link rel="stylesheet" href="../../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '9.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/translations.js"></script>
+    <link rel="top" title="PostgreSQL 数据库中文手册" href="../../index.html" />
+    <link rel="up" title="数据类型" href="index.html" />
+    <link rel="next" title="函数和操作符" href="../chp9/index.html" />
+    <link rel="prev" title="数据类型" href="index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>导航</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="总目录"
+             accesskey="I">索引</a></li>
+        <li class="right" >
+          <a href="../chp9/index.html" title="函数和操作符"
+             accesskey="N">下一页</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="数据类型"
+             accesskey="P">上一页</a> |</li>
+        <li><a href="../../index.html">PostgreSQL 数据库中文手册</a> &raquo;</li>
+          <li><a href="../index.html" >SQL 语言</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">数据类型</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="json">
+<h1>JSON 类型<a class="headerlink" href="#json" title="永久链接至标题">¶</a></h1>
+<p>PostgreSQL 的 JSON 数据类型用于储存 <a class="reference external" href="http://rfc7159.net/rfc7159">RFC 7159</a> 里面描述的 JSON （JavaScript Object Notation）数据。
+虽然 <code class="docutils literal"><span class="pre">text</span></code> 数据类型也可以用来储存 JSON 数据，
+但 JSON 数据类型的优势在于它会根据 JSON 规则来强制要求每个被储存的值都是合法的 JSON 数据。
+本文档的 <a class="reference external" href="http://www.postgresql.org/docs/9.4/interactive/functions-json.html">9.15 节</a>展示了各式各样专门用来处理 JSON 类型数据的函数和操作符。</p>
+<p>JSON 数据类型分为 <code class="docutils literal"><span class="pre">json</span></code> 数据类型和 <code class="docutils literal"><span class="pre">jsonb</span></code> 数据类型，
+这两种数据类型能够接受的输入<strong>几乎完全相同</strong>，
+它们的主要区别在于性能不同：</p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">json</span></code> 数据类型储存的是输入文本的精确拷贝，
+处理函数在每次执行的时候，
+都必须对这些文本重新进行分析（reparse）。</li>
+<li>而 <code class="docutils literal"><span class="pre">jsonb</span></code> 数据类型则以无压缩（decomposed）二进制格式来储存数据，
+因为格式转换带来的花销，
+这种类型在处理输入的时候速度会稍微慢一些，
+但是因为这种类型的数据并不需要重新进行分析，
+所以这种数据的处理速度会明显地快很多。
+另外 <code class="docutils literal"><span class="pre">jsonb</span></code> 还支持索引特性，
+这也是一个明显的优点。</li>
+</ul>
+<p>因为 <code class="docutils literal"><span class="pre">json</span></code> 类型储存的是输入文本的精确拷贝，
+所以它会保留介于各个 token 之间与语义无关的空白，
+以及各个键在 JSON 对象之内的排列顺序。
+另外，
+即使一个 JSON 对象包含多个具有相同键名的值，
+它的所有键值对也会被保留，
+但是处理函数只会把同名键中的最后一个值作为操作的对象。</p>
+<p>与此相反，
+<code class="docutils literal"><span class="pre">jsonb</span></code> 不会保留任何无关的空白，
+不会保留对象键的排列顺序，
+也不会保留任何重复的对象键。
+如果输入里面指定了重复的键，
+那么只有最后一个值会被保留。</p>
+<p>一般情况下，
+除非有特别的要求（比如针对对象键排列顺序的遗留假设，legacy assumption），
+否则的话，
+大多数应用程序都应该优先使用 <code class="docutils literal"><span class="pre">jsonb</span></code> 类型来储存 JSON 数据，</p>
+<p>在将文本形式的 JSON 输入转换为 <code class="docutils literal"><span class="pre">jsonb</span></code> 数据的时候，
+RFC 7159 中描述的基本类型会被高效地映射为 PostgreSQL 类型，
+具体细节如表格 8-23 所示。</p>
+<hr class="docutils" />
+<p>表格 8-23 JSON 基本类型以及相应的 PostgreSQL 类型</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="21%" />
+<col width="22%" />
+<col width="58%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">JSON 基本类型</th>
+<th class="head">PostgreSQL 类型</th>
+<th class="head">注意事项</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">string</span></code></td>
+<td><code class="docutils literal"><span class="pre">text</span></code></td>
+<td>参见之前对编码限制的讨论</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">number</span></code></td>
+<td><code class="docutils literal"><span class="pre">numeric</span></code></td>
+<td>不允许 <code class="docutils literal"><span class="pre">NaN</span></code> 值和 <code class="docutils literal"><span class="pre">infinity</span></code> 值</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">boolean</span></code></td>
+<td><code class="docutils literal"><span class="pre">boolean</span></code></td>
+<td>只接受小写的 <code class="docutils literal"><span class="pre">true</span></code> 和 <code class="docutils literal"><span class="pre">false</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">null</span></code></td>
+<td>无</td>
+<td>SQL 的 <code class="docutils literal"><span class="pre">NULL</span></code> 和 JSON 的 <code class="docutils literal"><span class="pre">null</span></code> 是不同的概念</td>
+</tr>
+</tbody>
+</table>
+<hr class="docutils" />
+<p>因为类型转换的原因，
+合法的 <code class="docutils literal"><span class="pre">jsonb</span></code> 数据具有少量 <code class="docutils literal"><span class="pre">json</span></code> 数据和抽象的 <code class="docutils literal"><span class="pre">JSON</span></code> 都不具有的额外限制，
+这些限制和底层数据类型能够表示的数据有关。</p>
+<p>具体来说，
+<code class="docutils literal"><span class="pre">jsonb</span></code> 会拒绝那些超出 PostgreSQL 数字类型范围的数字，
+而 <code class="docutils literal"><span class="pre">json</span></code> 则不会这样做。
+这种由实现定义的限制条件在 RFC 7159 中是被允许的。</p>
+<p>然而在实际中，
+因为很多其他实现都使用了 IEEE 754 双精度浮点数来表示 JSON 的数字基本类型（RFC 7159 已经预见了这一点并且遵循了这一规则），
+所以这种问题出现的可能性并不低。
+当 PostgreSQL 使用 JSON 格式与带有这种问题的系统进行信息交换的时候，
+原本储存在 PostgreSQL 中的数据的数字精度可能会丢失。</p>
+<p>另一方面，
+正如表格所示，
+某些 JSON 基本类型也是无法被转换为 PostgreSQL 类型的。</p>
+<div class="section" id="id2">
+<h2>8.14.1. JSON 的输入语法和输出语法<a class="headerlink" href="#id2" title="永久链接至标题">¶</a></h2>
+<p>JSON 数据类型的输入语法和输出语法都和 RFC 7159 中定义的一样。</p>
+<p>以下展示的都是合法的 <code class="docutils literal"><span class="pre">json</span></code> 表达式或 <code class="docutils literal"><span class="pre">jsonb</span></code> 表达式：</p>
+<div class="highlight-python"><div class="highlight"><pre>-- Simple scalar/primitive value
+-- Primitive values can be numbers, quoted strings, true, false, or null
+SELECT &#39;5&#39;::json;
+
+-- Array of zero or more elements (elements need not be of same type)
+SELECT &#39;[1, 2, &quot;foo&quot;, null]&#39;::json;
+
+-- Object containing pairs of keys and values
+-- Note that object keys must always be quoted strings
+SELECT &#39;{&quot;bar&quot;: &quot;baz&quot;, &quot;balance&quot;: 7.77, &quot;active&quot;: false}&#39;::json;
+
+-- Arrays and objects can be nested arbitrarily
+SELECT &#39;{&quot;foo&quot;: [true, &quot;bar&quot;], &quot;tags&quot;: {&quot;a&quot;: 1, &quot;b&quot;: null}}&#39;::json;
+</pre></div>
+</div>
+<p>和之前提到的一样，
+在使用 <code class="docutils literal"><span class="pre">JSON</span></code> 值作为输入时，
+并且不加任何额外处理进行打印的时候，
+<code class="docutils literal"><span class="pre">json</span></code> 会输出与输入完全相同的文本，
+而 <code class="docutils literal"><span class="pre">jsonb</span></code> 则不会保留语义无关空白等细节。
+下面的这个例子可以看出这种差别：</p>
+<div class="highlight-python"><div class="highlight"><pre>SELECT &#39;{&quot;bar&quot;: &quot;baz&quot;, &quot;balance&quot;: 7.77, &quot;active&quot;:false}&#39;::json;
+json
+-------------------------------------------------
+{&quot;bar&quot;: &quot;baz&quot;, &quot;balance&quot;: 7.77, &quot;active&quot;:false}
+(1 row)
+
+SELECT &#39;{&quot;bar&quot;: &quot;baz&quot;, &quot;balance&quot;: 7.77, &quot;active&quot;:false}&#39;::jsonb;
+jsonb
+--------------------------------------------------
+{&quot;bar&quot;: &quot;baz&quot;, &quot;active&quot;: false, &quot;balance&quot;: 7.77}
+(1 row)
+</pre></div>
+</div>
+<p>另外一个不太重要的语义无关细节是，
+<code class="docutils literal"><span class="pre">jsonb</span></code> 中的数字会根据底层数字类型的行为来进行打印。
+在实际中，
+这意味着带有 E 符号的数字会被打印成无 E 符号的普通数字，
+就像这样：</p>
+<div class="highlight-python"><div class="highlight"><pre>SELECT &#39;{&quot;reading&quot;: 1.230e-5}&#39;::json, &#39;{&quot;reading&quot;: 1.230e-5}&#39;::jsonb;
+        json           |          jsonb
+-----------------------+-------------------------
+{&quot;reading&quot;: 1.230e-5}  | {&quot;reading&quot;: 0.00001230}
+(1 row)
+</pre></div>
+</div>
+<p>正如上面的例子所示，
+<code class="docutils literal"><span class="pre">jsonb</span></code> 仍然会保留位于数字尾部的零，
+尽管这些零对于相等判断这类操作来说是语义无关的。</p>
+</div>
+<div class="section" id="id3">
+<h2>8.14.2. 设计高效的 JSON 文档<a class="headerlink" href="#id3" title="永久链接至标题">¶</a></h2>
+<p>使用 JSON 来表示数据可以获得比使用传统的关系数据模型更大的灵活度，
+这在需求不固定的环境里面非常具有吸引力。
+这两种方法也可以在同一个应用程序里面同时存在并互相补充。
+但是，
+即使对于需要最大化灵活性的应用程序来说，
+JSON 文档还是有比较固定的结构为好。
+结构一般来说都是非强制的（尽管强制声明某些商业规则是有可能的），
+但是拥有一个可预料的结构，
+可以让那些针对表格里面多个文档的查询变得更容易编写。</p>
+<p>JSON 数据和表格里面储存的任何其他数据类型一样，
+都服从于相同的并发控制机制。
+尽管储存一个巨大的文档是可行的，
+但是因为每次更新都会请求一个针对整个行的行级锁（row-level lock），
+所以请考虑将 JSON 文档限制在可控的大小之内，
+以便减少更新事务带来的锁冲突。
+在理想情况下，
+每个 JSON 文档都应该被表示为一个原子数据（atomic datum） ——
+这些数据可以独立被修改，
+并且商业规则已经无法合理地将这些数据进一步分割为更小的数据。</p>
+</div>
+<div class="section" id="jsonb">
+<h2>8.14.3. <code class="docutils literal"><span class="pre">jsonb</span></code> 的包含检测操作符和存在检测操作符<a class="headerlink" href="#jsonb" title="永久链接至标题">¶</a></h2>
+<p><code class="docutils literal"><span class="pre">jsonb</span></code> 类型的一个重要特性就是它可以检测一个 <code class="docutils literal"><span class="pre">jsonb</span></code> 值是否包含了另一个 <code class="docutils literal"><span class="pre">jsonb</span></code> 值，
+而 <code class="docutils literal"><span class="pre">json</span></code> 类型并不具备这样的特性。</p>
+<p>以下代码展示了一些例子：</p>
+<div class="highlight-python"><div class="highlight"><pre>-- 一个简单的基本值只包含它自身
+SELECT &#39;&quot;foo&quot;&#39;::jsonb @&gt; &#39;&quot;foo&quot;&#39;::jsonb;
+
+-- 左边的数组包含了右边的数组
+SELECT &#39;[1, 2, 3]&#39;::jsonb @&gt; &#39;[1, 3]&#39;::jsonb;
+
+-- 数组元素的排列并不影响检测结果，所以以下检测的结果也为 true
+SELECT &#39;[1, 2, 3]&#39;::jsonb @&gt; &#39;[3, 1]&#39;::jsonb;
+
+-- 同样地，重复的数组也不会影响检测结果
+SELECT &#39;[1, 2, 3]&#39;::jsonb @&gt; &#39;[1, 2, 2]&#39;::jsonb;
+
+-- 左边的对象包含了右边的对象
+SELECT &#39;{&quot;product&quot;: &quot;PostgreSQL&quot;, &quot;version&quot;: 9.4, &quot;jsonb&quot;:true}&#39;::jsonb @&gt; &#39;{&quot;version&quot;:9.4}&#39;::jsonb;
+
+-- 在左边数组内部嵌套一个和右边数组相同的数组
+-- 并不代表边数组就包含了右边数组
+SELECT &#39;[1, 2, [1, 3]]&#39;::jsonb @&gt; &#39;[1, 3]&#39;::jsonb;  -- 返回 false
+
+-- 但如果给右边数组加上一个嵌套层的话，那么包含关系就成立了
+SELECT &#39;[1, 2, [1, 3]]&#39;::jsonb @&gt; &#39;[[1, 3]]&#39;::jsonb;
+
+-- 和前一个数组例子的情况类似，但这次被嵌套的是键值对
+SELECT &#39;{&quot;foo&quot;: {&quot;bar&quot;: &quot;baz&quot;}}&#39;::jsonb @&gt; &#39;{&quot;bar&quot;: &quot;baz&quot;}&#39;::jsonb;  -- 返回 false
+</pre></div>
+</div>
+<p>包含检测的一般原则是，
+被包含的对象必须在结构和数据内容上与实施包含的对象一致，
+而实施包含的对象可能是在丢弃了某些非匹配数组元素或非匹配对象键值对之后才达成这种一致。
+需要记住的一点是数组元素的摆放顺序并不会影响检测的结果，
+并且为了提高效率，
+重复的数组元素只会被检测一次。
+作为“结构必须匹配”这个一般原则的一个特殊例外，
+一个数组可以包含一个基本值：</p>
+<div class="highlight-python"><div class="highlight"><pre>-- 这个数组包含了基本字符串值：
+SELECT &#39;[&quot;foo&quot;, &quot;bar&quot;]&#39;::jsonb @&gt; &#39;&quot;bar&quot;&#39;::jsonb;
+
+-- 这个例外并不是可互换的 —— 比如在这个例子里面，包含条件就不成立：
+SELECT &#39;&quot;bar&quot;&#39;::jsonb @&gt; &#39;[&quot;bar&quot;]&#39;::jsonb;  -- 返回 false
+</pre></div>
+</div>
+<p>除了包含检测操作符之外，
+<code class="docutils literal"><span class="pre">jsonb</span></code> 还支持存在检测操作符，
+这两者之间只有外型上的不同：
+这种操作符会检测给定的字符串（一个 <code class="docutils literal"><span class="pre">text</span></code> 值）是否为对象的键或数组的顶层元素。
+除了有特别注明的例子之外，
+下面展示的例子都返回 <code class="docutils literal"><span class="pre">true</span></code> ：</p>
+<div class="highlight-python"><div class="highlight"><pre>-- 字符串是否为数组元素？
+SELECT &#39;[&quot;foo&quot;, &quot;bar&quot;, &quot;baz&quot;]&#39;::jsonb ? &#39;bar&#39;;
+
+-- 字符串是否为对象的键？
+SELECT &#39;{&quot;foo&quot;: &quot;bar&quot;}&#39;::jsonb ? &#39;foo&#39;;
+
+-- 操作在进行检测时不会考虑对象的值：
+SELECT &#39;{&quot;foo&quot;: &quot;bar&quot;}&#39;::jsonb ? &#39;bar&#39;;  -- 返回 false
+
+-- 和包含检测一样，存在检测只会在顶层进行：
+SELECT &#39;{&quot;foo&quot;: {&quot;bar&quot;: &quot;baz&quot;}}&#39;::jsonb ? &#39;bar&#39;; -- 返回 false
+
+-- 对于相同的字符串，存在检测操作符会返回 true
+SELECT &#39;&quot;foo&quot;&#39;::jsonb ? &#39;foo&#39;;
+</pre></div>
+</div>
+<p>JSON 对象比数组更适合用在需要对多个键或者多个元素进行包含检测或存在检测的场景，
+因为 JSON 对象和数组不同，
+它在内部对搜索进行了优化，
+并且不需要进行线性查找。</p>
+<p><a class="reference external" href="http://www.postgresql.org/docs/9.4/interactive/functions-json.html">9.15 节</a>列出了包括包含检测操作符和存在检测操作符在内的所有 JSON 操作符和函数。</p>
+</div>
+<div class="section" id="id5">
+<h2>8.14.4 <code class="docutils literal"><span class="pre">jsonb</span></code> 索引<a class="headerlink" href="#id5" title="永久链接至标题">¶</a></h2>
+<p>GIN 索引可以提升在多个 <code class="docutils literal"><span class="pre">jsonb</span></code> 文档里面查找特定键或者特定键值对的效率。
+PostgreSQL 提供了两种 GIN 操作符类（operator class），
+它们在性能和灵活性上有不同的取舍。</p>
+<p><code class="docutils literal"><span class="pre">jsonb</span></code> 的默认 GIN 操作符类 <code class="docutils literal"><span class="pre">jsonb_ops</span></code> 支持为带有 <code class="docutils literal"><span class="pre">&#64;&gt;</span></code> 、 <code class="docutils literal"><span class="pre">?</span></code> 、 <code class="docutils literal"><span class="pre">?&amp;</span></code> 、 <code class="docutils literal"><span class="pre">?|</span></code> 操作符的查询创建索引（<a class="reference external" href="http://www.postgresql.org/docs/9.4/interactive/functions-json.html#FUNCTIONS-JSONB-OP-TABLE">表格 9-41</a>记录了这些操作符的详细语义）。
+以下是一个创建 <code class="docutils literal"><span class="pre">jsonb_ops</span></code> 索引的例子：</p>
+<div class="highlight-python"><div class="highlight"><pre>CREATE INDEX idxgin ON api USING gin (jdoc);
+</pre></div>
+</div>
+<p>非默认的 GIN 操作符类 <code class="docutils literal"><span class="pre">jsonb_path_ops</span></code> 只支持为带有 <code class="docutils literal"><span class="pre">&#64;&gt;</span></code> 操作符的查询创建索引。
+以下是一个创建 <code class="docutils literal"><span class="pre">jsonb_path_ops</span></code> 索引的例子：</p>
+<div class="highlight-python"><div class="highlight"><pre>CREATE INDEX idxginp ON api USING gin (jdoc jsonb_path_ops);
+</pre></div>
+</div>
+<p>假设有一个表，
+它使用文档来储存第三方 web 服务传来的 JSON 数据，
+以下是这中 JSON 数据的一个例子：</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">{</span>
+    <span class="s">&quot;guid&quot;</span><span class="p">:</span> <span class="s">&quot;9c36adc1-7fb5-4d5b-83b4-90356a46061a&quot;</span><span class="p">,</span>
+    <span class="s">&quot;name&quot;</span><span class="p">:</span> <span class="s">&quot;Angela Barton&quot;</span><span class="p">,</span>
+    <span class="s">&quot;is_active&quot;</span><span class="p">:</span> <span class="n">true</span><span class="p">,</span>
+    <span class="s">&quot;company&quot;</span><span class="p">:</span> <span class="s">&quot;Magnafone&quot;</span><span class="p">,</span>
+    <span class="s">&quot;address&quot;</span><span class="p">:</span> <span class="s">&quot;178 Howard Place, Gulf, Washington, 702&quot;</span><span class="p">,</span>
+    <span class="s">&quot;registered&quot;</span><span class="p">:</span> <span class="s">&quot;2009-11-07T08:53:22 +08:00&quot;</span><span class="p">,</span>
+    <span class="s">&quot;latitude&quot;</span><span class="p">:</span> <span class="mf">19.793713</span><span class="p">,</span>
+    <span class="s">&quot;longitude&quot;</span><span class="p">:</span> <span class="mf">86.513373</span><span class="p">,</span>
+    <span class="s">&quot;tags&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">&quot;enim&quot;</span><span class="p">,</span>
+        <span class="s">&quot;aliquip&quot;</span><span class="p">,</span>
+        <span class="s">&quot;qui&quot;</span>
+    <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>如果我们将这个文档储存到 <code class="docutils literal"><span class="pre">api</span></code> 表的 <code class="docutils literal"><span class="pre">jdoc</span></code> 列里面，
+并且为 <code class="docutils literal"><span class="pre">jdoc</span></code> 列创建 GIN 索引，
+那么下面的这个查询就会用到我们创建的索引：</p>
+<div class="highlight-python"><div class="highlight"><pre>-- 查找键 company 的值为 Magnafone 的文档
+SELECT jdoc-&gt;&#39;guid&#39;, jdoc-&gt;&#39;name&#39; FROM api WHERE jdoc @&gt; &#39;{&quot;company&quot;: &quot;Magnafone&quot;}&#39;;
+</pre></div>
+</div>
+<p>与此相反，
+因为下面这个查询并非直接针对带有索引的 <code class="docutils literal"><span class="pre">jdoc</span></code> 列，
+所以尽管查询用到了可索引的 <code class="docutils literal"><span class="pre">?</span></code> 操作符，
+但这个查询还是没办法用到 <code class="docutils literal"><span class="pre">jdoc</span></code> 行的索引：</p>
+<div class="highlight-python"><div class="highlight"><pre>-- 查找那些在键 tags 里面包含了数组元素 qui 的文档
+SELECT jdoc-&gt;&#39;guid&#39;, jdoc-&gt;&#39;name&#39; FROM api WHERE jdoc -&gt; &#39;tags&#39; ? &#39;qui&#39;;
+</pre></div>
+</div>
+<p>尽管只要恰当地使用表达式索引，
+就可以在上面的查询中用到索引，
+但如果我们经常需要在 <code class="docutils literal"><span class="pre">tags</span></code> 数组里面查找特定元素的话，
+那么最好的做法还是直接为 <code class="docutils literal"><span class="pre">tags</span></code> 数组创建一个索引，
+就像这样：</p>
+<div class="highlight-python"><div class="highlight"><pre>CREATE INDEX idxgintags ON api USING gin ((jdoc -&gt; &#39;tags&#39;));
+</pre></div>
+</div>
+<p>现在，
+<code class="docutils literal"><span class="pre">WHERE</span> <span class="pre">jdoc</span> <span class="pre">-&gt;</span> <span class="pre">'tags'</span> <span class="pre">?</span> <span class="pre">'qui'</span></code> 将被识别为可索引操作符 <code class="docutils literal"><span class="pre">?</span></code> 对已索引表达式 <code class="docutils literal"><span class="pre">jdoc</span> <span class="pre">-&gt;</span> <span class="pre">'tags'</span></code> 的应用。
+（<a class="reference external" href="http://www.postgresql.org/docs/9.4/interactive/indexes-expressional.html">11.7 节</a>介绍了表达式索引的更多相关信息。）</p>
+<p>另一种进行查询的方法是使用包含检测操作符，
+以下是一个例子：</p>
+<div class="highlight-python"><div class="highlight"><pre>-- 查找那些在 tags 键里面包含了数组元素 qui 的文档
+SELECT jdoc-&gt;&#39;guid&#39;, jdoc-&gt;&#39;name&#39; FROM api WHERE jdoc @&gt; &#39;{&quot;tags&quot;: [&quot;qui&quot;]}&#39;;
+</pre></div>
+</div>
+<p>针对 <code class="docutils literal"><span class="pre">jdoc</span></code> 列的 GIN 索引支持这个查询。
+不过请记住，
+GIN 索引会储存 <code class="docutils literal"><span class="pre">jdoc</span></code> 列所有键和值的副本，
+而之前展示的表达式索引只会储存 <code class="docutils literal"><span class="pre">tags</span></code> 键的值。</p>
+<p>因为 GIN 索引支持针对任何键的查询，
+所以它具有更大的灵活性，
+但定向的表达式索引可以节约更多空间，
+并且搜索的速度有时候甚至比 GIN 索引还要快。</p>
+<p>尽管 <code class="docutils literal"><span class="pre">jsonb_path_ops</span></code> 索引只支持带有 <code class="docutils literal"><span class="pre">&#64;&gt;</span></code> 操作符的查询，
+但是与默认的 <code class="docutils literal"><span class="pre">jsonb_ops</span></code> 索引相比，
+<code class="docutils literal"><span class="pre">jsonb_path_ops</span></code> 索引有明显的性能优势。
+对于相同的数据，
+建立 <code class="docutils literal"><span class="pre">jsonb_path_ops</span></code> 索引所需的空间比建立 <code class="docutils literal"><span class="pre">jsonb_ops</span></code> 索引所需的空间要少得多，
+并且 <code class="docutils literal"><span class="pre">jsonb_path_ops</span></code> 索引在处理某些特定的查询时拥有更好的性能，
+当查询包含的键频繁地在数据中出现时，
+更是如此。</p>
+<p><code class="docutils literal"><span class="pre">jsonb_ops</span></code> 和 <code class="docutils literal"><span class="pre">jsonb_path_ops</span></code> GIN 索引之间的技术区别在于，
+前者会为数据中的每个键和值都创建独立的索引项，
+而后者只会为数据中的每个值创建索引项。</p>
+<ul class="simple">
+<li>每个 <code class="docutils literal"><span class="pre">jsonb_path_ops</span></code> 索引项基本上就是一个由被索引的键和值组成的散列。
+举个例子，
+为 <code class="docutils literal"><span class="pre">{&quot;foo&quot;:</span> <span class="pre">{&quot;bar&quot;:</span> <span class="pre">&quot;baz&quot;}}</span></code> 建立 <code class="docutils literal"><span class="pre">jsonb_path_ops</span></code> 索引将产生一个新的索引项，
+这个索引项是一个由 <code class="docutils literal"><span class="pre">foo</span></code> 、 <code class="docutils literal"><span class="pre">bar</span></code> 、 <code class="docutils literal"><span class="pre">baz</span></code> 三个值组成的散列，
+因此针对这个结构的包含检测查询最终将会产生一次非常明确的索引搜索，
+但是这种实现也使得 PostgreSQL 没办法判断 <code class="docutils literal"><span class="pre">foo</span></code> 到底是被索引的键还是被索引的值。</li>
+<li>与此相反，
+<code class="docutils literal"><span class="pre">jsonb_ops</span></code> 索引会为分别为 <code class="docutils literal"><span class="pre">foo</span></code> 、 <code class="docutils literal"><span class="pre">bar</span></code> 、 <code class="docutils literal"><span class="pre">baz</span></code> 各创建一个索引，
+在进行包含检测查询的时候，
+PostgreSQL 就会在包含了这三个索引项的行里面进行查找。</li>
+</ul>
+<p>尽管 <code class="docutils literal"><span class="pre">jsonb_ops</span></code> 索引可以比较高效地执行像 <code class="docutils literal"><span class="pre">AND</span></code> 这样的搜索，
+但是比起等价的 <code class="docutils literal"><span class="pre">jsonb_path_ops</span></code> 搜索，
+<code class="docutils literal"><span class="pre">jsonb_ops</span></code> 索引在明确性和速度上还是要略逊一筹，
+当 <code class="docutils literal"><span class="pre">jsonb_ops</span></code> 创建了非常多的索引行，
+而 PostgreSQL 只需要从这些行里面搜索少量几个被索引项的时候，
+更是如此。</p>
+<p><code class="docutils literal"><span class="pre">jsonb_path_ops</span></code> 索引的缺点在于，
+它不会为类似 <code class="docutils literal"><span class="pre">{&quot;a&quot;:</span> <span class="pre">{}}</span></code> 这样不包含任何值的 JSON 结构创建索引，
+因此在对包含这样结构的文档进行搜索时，
+就需要耗费大量的时间对整个索引进行搜索。
+因此，
+<code class="docutils literal"><span class="pre">jsonb_path_ops</span></code> 并不适用于需要经常执行这种查询的应用程序。</p>
+<p><code class="docutils literal"><span class="pre">jsonb</span></code> 还支持 B 树索引和散列索引，
+但是只有当“检查整个 JSON 文档是否相等”这个操作非常重要的时候，
+人们才会使用这两种索引。
+很少会有人对 B 树如何排列 <code class="docutils literal"><span class="pre">jsonb</span></code> 数据感兴趣，
+但为了完整性考虑，
+这里还是给出详细的 B 树对比规则：</p>
+<div class="highlight-python"><div class="highlight"><pre>Object &gt; Array &gt; Boolean &gt; Number &gt; String &gt; Null
+
+Object with n pairs &gt; object with n - 1 pairs
+
+Array with n elements &gt; array with n - 1 elements
+</pre></div>
+</div>
+<p>键值对数量相同的对象会按照以下顺序来进行对比：</p>
+<div class="highlight-python"><div class="highlight"><pre>key-1, value-1, key-2 ...
+</pre></div>
+</div>
+<p>注意对象的键是按照储存顺序来进行对比的，
+在实际中，
+因为较短的键会储存在较长的键的前面，
+所以这可能会导致一些不符合直觉的对比结果，
+比如说：</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">{</span> <span class="s">&quot;aa&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&quot;c&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span> <span class="o">&gt;</span> <span class="p">{</span><span class="s">&quot;b&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&quot;d&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>类似的，
+元素数量相同的数组会按照以下顺序来进行对比：</p>
+<div class="highlight-python"><div class="highlight"><pre>element-1, element-2 ...
+</pre></div>
+</div>
+<p>基本 JSON 值进行对比时，
+使用和底层 PostgreSQL 数据类型一样的对比规则。
+而字符串则根据数据库的默认编码来进行对比。</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../../index.html">內容目录</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">JSON 类型</a><ul>
+<li><a class="reference internal" href="#id2">8.14.1. JSON 的输入语法和输出语法</a></li>
+<li><a class="reference internal" href="#id3">8.14.2. 设计高效的 JSON 文档</a></li>
+<li><a class="reference internal" href="#jsonb">8.14.3. <code class="docutils literal"><span class="pre">jsonb</span></code> 的包含检测操作符和存在检测操作符</a></li>
+<li><a class="reference internal" href="#id5">8.14.4 <code class="docutils literal"><span class="pre">jsonb</span></code> 索引</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>上一个主题</h4>
+  <p class="topless"><a href="index.html"
+                        title="上一章">数据类型</a></p>
+  <h4>下一个主题</h4>
+  <p class="topless"><a href="../chp9/index.html"
+                        title="下一章">函数和操作符</a></p>
+  <div role="note" aria-label="source link">
+    <h3>本页</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/part2/chp8/section14.txt"
+            rel="nofollow">显示源代码</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>快速搜索</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="转向" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    输入相关的术语，模块，类或者函数名称进行搜索
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>导航</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="总目录"
+             >索引</a></li>
+        <li class="right" >
+          <a href="../chp9/index.html" title="函数和操作符"
+             >下一页</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="数据类型"
+             >上一页</a> |</li>
+        <li><a href="../../index.html">PostgreSQL 数据库中文手册</a> &raquo;</li>
+          <li><a href="../index.html" >SQL 语言</a> &raquo;</li>
+          <li><a href="index.html" >数据类型</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; 版权所有 2014, 黄健宏（huangz）.
+      由 <a href="http://sphinx-doc.org/">Sphinx</a> 1.3b1 创建。
+    </div>
+  </body>
+</html>

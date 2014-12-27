@@ -1,0 +1,504 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>JSON 函数和操作符 &mdash; PostgreSQL 数据库中文手册</title>
+    
+    <link rel="stylesheet" href="../../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '9.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/translations.js"></script>
+    <link rel="top" title="PostgreSQL 数据库中文手册" href="../../index.html" />
+    <link rel="up" title="函数和操作符" href="index.html" />
+    <link rel="prev" title="函数和操作符" href="index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>导航</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="总目录"
+             accesskey="I">索引</a></li>
+        <li class="right" >
+          <a href="index.html" title="函数和操作符"
+             accesskey="P">上一页</a> |</li>
+        <li><a href="../../index.html">PostgreSQL 数据库中文手册</a> &raquo;</li>
+          <li><a href="../index.html" >SQL 语言</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">函数和操作符</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="json">
+<h1>JSON 函数和操作符<a class="headerlink" href="#json" title="永久链接至标题">¶</a></h1>
+<p>表格 9.40 展示了两种 JSON 数据类型可用的操作符。</p>
+<hr class="docutils" />
+<p>表格 9.40 <code class="docutils literal"><span class="pre">json</span></code> 和 <code class="docutils literal"><span class="pre">jsonb</span></code> 操作符</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="7%" />
+<col width="10%" />
+<col width="35%" />
+<col width="35%" />
+<col width="12%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">操作符</th>
+<th class="head">参数类型</th>
+<th class="head">作用</th>
+<th class="head">例子</th>
+<th class="head">例子的执行结果</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">-&gt;</span></code></td>
+<td><code class="docutils literal"><span class="pre">int</span></code></td>
+<td>获取 JSON 数组元素，索引以 0 为开始</td>
+<td><code class="docutils literal"><span class="pre">'[{&quot;a&quot;:&quot;foo&quot;},{&quot;b&quot;:&quot;bar&quot;},{&quot;c&quot;:&quot;baz&quot;}]'::json-&gt;2</span></code></td>
+<td><code class="docutils literal"><span class="pre">{&quot;c&quot;:&quot;baz&quot;}</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">-&gt;</span></code></td>
+<td><code class="docutils literal"><span class="pre">text</span></code></td>
+<td>通过键来获取 JSON 对象的域（field）</td>
+<td><code class="docutils literal"><span class="pre">'{&quot;a&quot;:</span> <span class="pre">{&quot;b&quot;:&quot;foo&quot;}}'::json-&gt;'a'</span></code></td>
+<td><code class="docutils literal"><span class="pre">{&quot;b&quot;:&quot;foo&quot;}</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">-&gt;&gt;</span></code></td>
+<td><code class="docutils literal"><span class="pre">int</span></code></td>
+<td>获取 JSON 数组元素，然后以 <code class="docutils literal"><span class="pre">text</span></code> 形式返回它</td>
+<td><code class="docutils literal"><span class="pre">'[1,2,3]'::json-&gt;&gt;2</span></code></td>
+<td><code class="docutils literal"><span class="pre">3</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">-&gt;&gt;</span></code></td>
+<td><code class="docutils literal"><span class="pre">text</span></code></td>
+<td>获取 JSON 对象的域，然后以 <code class="docutils literal"><span class="pre">text</span></code> 形式返回它</td>
+<td><code class="docutils literal"><span class="pre">'{&quot;a&quot;:1,&quot;b&quot;:2}'::json-&gt;&gt;'b'</span></code></td>
+<td><code class="docutils literal"><span class="pre">2</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">#&gt;</span></code></td>
+<td><code class="docutils literal"><span class="pre">text[]</span></code></td>
+<td>获取指定路径上的 JSON 对象</td>
+<td><code class="docutils literal"><span class="pre">'{&quot;a&quot;:</span> <span class="pre">{&quot;b&quot;:{&quot;c&quot;:</span> <span class="pre">&quot;foo&quot;}}}'::json#&gt;'{a,b}'</span></code></td>
+<td><code class="docutils literal"><span class="pre">{&quot;c&quot;:</span> <span class="pre">&quot;foo&quot;}</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">#&gt;&gt;</span></code></td>
+<td><code class="docutils literal"><span class="pre">text[]</span></code></td>
+<td>获取指定路径上的 JSON 对象，并以 <code class="docutils literal"><span class="pre">text</span></code> 形式返回它</td>
+<td><code class="docutils literal"><span class="pre">'{&quot;a&quot;:[1,2,3],&quot;b&quot;:[4,5,6]}'::json#&gt;&gt;'{a,2}'</span></code></td>
+<td><code class="docutils literal"><span class="pre">3</span></code></td>
+</tr>
+</tbody>
+</table>
+<hr class="docutils" />
+<p><a class="reference external" href="http://www.postgresql.org/docs/9.4/interactive/functions-comparison.html#FUNCTIONS-COMPARISON-TABLE">表格 9.1</a>展示了 <code class="docutils literal"><span class="pre">jsonb</span></code> 类型的标准比较操作符，但这些操作符不能用于 <code class="docutils literal"><span class="pre">json</span></code> 类型。
+表格中的操作符都遵循 <a class="reference external" href="http://www.postgresql.org/docs/9.4/interactive/datatype-json.html#JSON-INDEXING">8.14.4 节</a>介绍的 B 树排序规则。</p>
+<p>表格 9.41 展示了 <code class="docutils literal"><span class="pre">jsonb</span></code> 类型的另外一些操作符。</p>
+<hr class="docutils" />
+<p>表格 9.41 附加的 <code class="docutils literal"><span class="pre">jsonb</span></code> 操作符</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="5%" />
+<col width="9%" />
+<col width="38%" />
+<col width="48%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">操作符</th>
+<th class="head">右值的类型</th>
+<th class="head">作用</th>
+<th class="head">示例</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">&#64;&gt;</span></code></td>
+<td><code class="docutils literal"><span class="pre">jsonb</span></code></td>
+<td>左边的 JSON 值是否包含了右边的值？</td>
+<td><code class="docutils literal"><span class="pre">'{&quot;a&quot;:1,</span> <span class="pre">&quot;b&quot;:2}'::jsonb</span> <span class="pre">&#64;&gt;</span> <span class="pre">'{&quot;b&quot;:2}'::jsonb</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">&lt;&#64;</span></code></td>
+<td><code class="docutils literal"><span class="pre">jsonb</span></code></td>
+<td>左边的 JSON 值是否被右边的值包含在内？</td>
+<td><code class="docutils literal"><span class="pre">'{&quot;b&quot;:2}'::jsonb</span> <span class="pre">&lt;&#64;</span> <span class="pre">'{&quot;a&quot;:1,</span> <span class="pre">&quot;b&quot;:2}'::jsonb</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">?</span></code></td>
+<td><code class="docutils literal"><span class="pre">text</span></code></td>
+<td>给定的字符串键/元素是否存在于 JSON 值之内？</td>
+<td><code class="docutils literal"><span class="pre">'{&quot;a&quot;:1,</span> <span class="pre">&quot;b&quot;:2}'::jsonb</span> <span class="pre">?</span> <span class="pre">'b'</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">?|</span></code></td>
+<td><code class="docutils literal"><span class="pre">text[]</span></code></td>
+<td>给定键/元素是否有任何一个存在于 JSON 值之内？</td>
+<td><code class="docutils literal"><span class="pre">'{&quot;a&quot;:1,</span> <span class="pre">&quot;b&quot;:2,</span> <span class="pre">&quot;c&quot;:3}'::jsonb</span> <span class="pre">?|</span> <span class="pre">array['b',</span> <span class="pre">'c']</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">?&amp;</span></code></td>
+<td><code class="docutils literal"><span class="pre">text[]</span></code></td>
+<td>给定键/元素是否全部都存在于 JSON 值之内？</td>
+<td><code class="docutils literal"><span class="pre">'[&quot;a&quot;,</span> <span class="pre">&quot;b&quot;]'::jsonb</span> <span class="pre">?&amp;</span> <span class="pre">array['a',</span> <span class="pre">'b']</span></code></td>
+</tr>
+</tbody>
+</table>
+<hr class="docutils" />
+<p>以上大部分操作符都可以通过 <code class="docutils literal"><span class="pre">jsonb</span></code> 操作符类型来进行索引。
+<a class="reference external" href="http://www.postgresql.org/docs/9.4/interactive/datatype-json.html#JSON-CONTAINMENT">8.14.3 节</a> 完整地介绍了 <code class="docutils literal"><span class="pre">jsonb</span></code> 的包含操作符（containment）和存在操作符（existence）。
+<a class="reference external" href="http://www.postgresql.org/docs/9.4/interactive/datatype-json.html#JSON-INDEXING">8.14.4 节</a>展示了如何使用这些操作符来高效地索引 <code class="docutils literal"><span class="pre">jsonb</span></code> 数据。</p>
+<p>表格 9.42 展示了用于创建 <code class="docutils literal"><span class="pre">json</span></code> 值的函数。
+目前还没有专门用于创建 <code class="docutils literal"><span class="pre">jsonb</span></code> 数据的函数，
+但我们可以将下面这些函数的执行结果转换为 <code class="docutils literal"><span class="pre">jsonb</span></code> 数据。</p>
+<hr class="docutils" />
+<p>表格 9.42 JSON 创建函数</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="21%" />
+<col width="36%" />
+<col width="23%" />
+<col width="20%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">函数</th>
+<th class="head">描述</th>
+<th class="head">执行示例</th>
+<th class="head">示例的执行结果</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">to_json(anyelement)</span></code></td>
+<td>以 JSON 格式返回输入的值。
+数组和复合数据会被（递归地）转换为数组和对象；
+如果有转换函数可以将输入的数据转换为 <code class="docutils literal"><span class="pre">json</span></code> 的话，那么使用转换函数；
+或者产生一个 JSON 标量（scalar）值。
+数字、布尔值和空值（null）之外的其他标量会被表示为文本格式，
+并通过正确的引用和转义来保证它是一个合法的 JSON 字符串。</td>
+<td><code class="docutils literal"><span class="pre">to_json('Fred</span> <span class="pre">said</span> <span class="pre">&quot;Hi.&quot;'::text)</span></code></td>
+<td><code class="docutils literal"><span class="pre">&quot;Fred</span> <span class="pre">said</span> <span class="pre">\&quot;Hi.\&quot;&quot;</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">array_to_json(anyarray</span> <span class="pre">[,</span> <span class="pre">pretty_bool])</span></code></td>
+<td>以 JSON 数组格式返回输入的数组。
+一个 PostgreSQL 多维数组将被转换成一个由多个数组组成的 JSON 数组。
+如果 <code class="docutils literal"><span class="pre">pretty_bool</span></code> 的值为 <code class="docutils literal"><span class="pre">true</span></code> ，
+那么各个维度-1的元素之间将会添加一个换行符。</td>
+<td><code class="docutils literal"><span class="pre">array_to_json('{{1,5},{99,100}}'::int[])</span></code></td>
+<td><code class="docutils literal"><span class="pre">[[1,5],[99,100]]</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">row_to_json(record</span> <span class="pre">[,</span> <span class="pre">pretty_bool])</span></code></td>
+<td>以 JSON 对象格式返回行。
+如果 <code class="docutils literal"><span class="pre">pretty_bool</span></code> 的值为 <code class="docutils literal"><span class="pre">true</span></code> ，
+那么各个层-1的元素之间将会添加一个换行符。</td>
+<td><code class="docutils literal"><span class="pre">row_to_json(row(1,'foo'))</span></code></td>
+<td><code class="docutils literal"><span class="pre">{&quot;f1&quot;:1,&quot;f2&quot;:&quot;foo&quot;}</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">json_build_array(VARIADIC</span> <span class="pre">&quot;any&quot;)</span></code></td>
+<td>根据可变参数列表，
+构建一个可能由多种类型组成（possibly-heterogeneously-typed ）的 JSON 数组。</td>
+<td><code class="docutils literal"><span class="pre">json_build_array(1,2,'3',4,5)</span></code></td>
+<td><code class="docutils literal"><span class="pre">[1,</span> <span class="pre">2,</span> <span class="pre">&quot;3&quot;,</span> <span class="pre">4,</span> <span class="pre">5]</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">json_build_object(VARIADIC</span> <span class="pre">&quot;any&quot;)</span></code></td>
+<td>根据输入的可变参数列表构建一个 JSON 对象。
+根据习惯，参数列表将由交替的键和值组成。</td>
+<td><code class="docutils literal"><span class="pre">json_build_object('foo',1,'bar',2)</span></code></td>
+<td><code class="docutils literal"><span class="pre">{&quot;foo&quot;:</span> <span class="pre">1,</span> <span class="pre">&quot;bar&quot;:</span> <span class="pre">2}</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">json_object(text[])</span></code></td>
+<td>根据输入的文本数组构建一个 JSON 对象。
+输入的数组要么就是由偶数个成员组成的一维数组，
+数组中的每两个成员组成一个键值对；
+要么就是一个二维数组，并且每个内部数组都正好包含两个元素，
+这两个元素组成一个键值对。</td>
+<td><p class="first"><code class="docutils literal"><span class="pre">json_object('{a,</span> <span class="pre">1,</span> <span class="pre">b,</span> <span class="pre">&quot;def&quot;,</span> <span class="pre">c,</span> <span class="pre">3.5}')</span></code></p>
+<p class="last"><code class="docutils literal"><span class="pre">json_object('{{a,</span> <span class="pre">1},{b,</span> <span class="pre">&quot;def&quot;},{c,</span> <span class="pre">3.5}}')</span></code></p>
+</td>
+<td><code class="docutils literal"><span class="pre">{&quot;a&quot;:</span> <span class="pre">&quot;1&quot;,</span> <span class="pre">&quot;b&quot;:</span> <span class="pre">&quot;def&quot;,</span> <span class="pre">&quot;c&quot;:</span> <span class="pre">&quot;3.5&quot;}</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">json_object(keys</span> <span class="pre">text[],</span> <span class="pre">values</span> <span class="pre">text[])</span></code></td>
+<td>这个格式的 <code class="docutils literal"><span class="pre">json_object</span></code> 函数接受两个数组作为输入，
+第一个数组的元素会被用作键值对的键，
+而第二个数组的元素则会被用作键值对的值。</td>
+<td><code class="docutils literal"><span class="pre">json_object('{a,</span> <span class="pre">b}',</span> <span class="pre">'{1,2}')</span></code></td>
+<td><code class="docutils literal"><span class="pre">{&quot;a&quot;:</span> <span class="pre">&quot;1&quot;,</span> <span class="pre">&quot;b&quot;:</span> <span class="pre">&quot;2&quot;}</span></code></td>
+</tr>
+</tbody>
+</table>
+<hr class="docutils" />
+<p>表格 9-43 展示了 <code class="docutils literal"><span class="pre">json</span></code> 值和 <code class="docutils literal"><span class="pre">jsonb</span></code> 值的处理函数。</p>
+<hr class="docutils" />
+<p>表格 9-43 JSON 处理函数</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="23%" />
+<col width="14%" />
+<col width="21%" />
+<col width="29%" />
+<col width="12%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">函数</th>
+<th class="head">返回值类型</th>
+<th class="head">作用</th>
+<th class="head">执行示例</th>
+<th class="head">示例执行结果</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><p class="first"><code class="docutils literal"><span class="pre">json_array_length(json)</span></code></p>
+<p class="last"><code class="docutils literal"><span class="pre">jsonb_array_length(jsonb)</span></code></p>
+</td>
+<td><code class="docutils literal"><span class="pre">int</span></code></td>
+<td>返回最外层的 JSON 数组的元素数量。</td>
+<td><code class="docutils literal"><span class="pre">json_array_length('[1,2,3,{&quot;f1&quot;:1,&quot;f2&quot;:[5,6]},4]')</span></code></td>
+<td><code class="docutils literal"><span class="pre">5</span></code></td>
+</tr>
+<tr class="row-odd"><td><p class="first"><code class="docutils literal"><span class="pre">json_each(json)</span></code></p>
+<p class="last"><code class="docutils literal"><span class="pre">jsonb_each(jsonb)</span></code></p>
+</td>
+<td><p class="first">一系列文本键和 <code class="docutils literal"><span class="pre">json</span></code> 值</p>
+<p class="last">一系列文本键和 <code class="docutils literal"><span class="pre">jsonb</span></code> 值</p>
+</td>
+<td>将最外层的 JSON 对象展开为一系列键值对。</td>
+<td><code class="docutils literal"><span class="pre">select</span> <span class="pre">*</span> <span class="pre">from</span> <span class="pre">json_each('{&quot;a&quot;:&quot;foo&quot;,</span> <span class="pre">&quot;b&quot;:&quot;bar&quot;}')</span></code></td>
+<td><div class="first last highlight-python"><div class="highlight"><pre> key | value
+-----+-------
+ a   | &quot;foo&quot;
+ b   | &quot;bar&quot;
+</pre></div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td><p class="first"><code class="docutils literal"><span class="pre">json_each_text(json)</span></code></p>
+<p class="last"><code class="docutils literal"><span class="pre">jsonb_each_text(jsonb)</span></code></p>
+</td>
+<td>一系列文本键和文本值</td>
+<td>将最外层的 JSON 对象展开为一系列键值对，
+并以 <code class="docutils literal"><span class="pre">text</span></code> 格式返回这些键值对。</td>
+<td><code class="docutils literal"><span class="pre">select</span> <span class="pre">*</span> <span class="pre">from</span> <span class="pre">json_each_text('{&quot;a&quot;:&quot;foo&quot;,</span> <span class="pre">&quot;b&quot;:&quot;bar&quot;}')</span></code></td>
+<td><div class="first last highlight-python"><div class="highlight"><pre> key | value
+-----+-------
+ a   | foo
+ b   | bar
+</pre></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td><p class="first"><code class="docutils literal"><span class="pre">json_extract_path(from_json</span> <span class="pre">json,</span></code>
+<code class="docutils literal"><span class="pre">VARIADIC</span> <span class="pre">path_elems</span> <span class="pre">text[])</span></code></p>
+<p class="last"><code class="docutils literal"><span class="pre">jsonb_extract_path(from_json</span> <span class="pre">jsonb,</span></code>
+<code class="docutils literal"><span class="pre">VARIADIC</span> <span class="pre">path_elems</span> <span class="pre">text[])</span></code></p>
+</td>
+<td><p class="first"><code class="docutils literal"><span class="pre">json</span></code></p>
+<p class="last"><code class="docutils literal"><span class="pre">jsonb</span></code></p>
+</td>
+<td>返回 <code class="docutils literal"><span class="pre">path_elems</span></code> 所指向的 JSON 值。
+等同于 <code class="docutils literal"><span class="pre">#&gt;</span></code> 操作符。</td>
+<td><code class="docutils literal"><span class="pre">json_extract_path</span></code>
+<code class="docutils literal"><span class="pre">('{&quot;f2&quot;:{&quot;f3&quot;:1},&quot;f4&quot;:{&quot;f5&quot;:99,&quot;f6&quot;:&quot;foo&quot;}}','f4')</span></code></td>
+<td><code class="docutils literal"><span class="pre">{&quot;f5&quot;:99,&quot;f6&quot;:&quot;foo&quot;}</span></code></td>
+</tr>
+<tr class="row-even"><td><p class="first"><code class="docutils literal"><span class="pre">json_extract_path_text(</span></code>
+<code class="docutils literal"><span class="pre">from_json</span> <span class="pre">json,</span> <span class="pre">VARIADIC</span> <span class="pre">path_elems</span> <span class="pre">text[])</span></code></p>
+<p class="last"><code class="docutils literal"><span class="pre">jsonb_extract_path_text(</span></code>
+<code class="docutils literal"><span class="pre">from_json</span> <span class="pre">jsonb,</span> <span class="pre">VARIADIC</span> <span class="pre">path_elems</span> <span class="pre">text[])</span></code></p>
+</td>
+<td><code class="docutils literal"><span class="pre">text</span></code></td>
+<td>以 <code class="docutils literal"><span class="pre">text</span></code> 格式，
+返回 <code class="docutils literal"><span class="pre">path_elems</span></code> 所指向的 JSON 值。
+效果等同于 <code class="docutils literal"><span class="pre">#&gt;&gt;</span></code> 操作符。</td>
+<td><code class="docutils literal"><span class="pre">json_extract_path_text</span></code>
+<code class="docutils literal"><span class="pre">('{&quot;f2&quot;:{&quot;f3&quot;:1},&quot;f4&quot;:{&quot;f5&quot;:99,&quot;f6&quot;:&quot;foo&quot;}}','f4',</span> <span class="pre">'f6')</span></code></td>
+<td><code class="docutils literal"><span class="pre">foo</span></code></td>
+</tr>
+<tr class="row-odd"><td><p class="first"><code class="docutils literal"><span class="pre">json_object_keys(json)</span></code></p>
+<p class="last"><code class="docutils literal"><span class="pre">jsonb_object_keys(jsonb)</span></code></p>
+</td>
+<td>一系列 <code class="docutils literal"><span class="pre">text</span></code></td>
+<td>返回最外层的 JSON 对象所包含的键。</td>
+<td><code class="docutils literal"><span class="pre">json_object_keys</span></code>
+<code class="docutils literal"><span class="pre">('{&quot;f1&quot;:&quot;abc&quot;,&quot;f2&quot;:{&quot;f3&quot;:&quot;a&quot;,</span> <span class="pre">&quot;f4&quot;:&quot;b&quot;}}')</span></code></td>
+<td><div class="first last highlight-python"><div class="highlight"><pre> json_object_keys
+------------------
+ f1
+ f2
+</pre></div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td><p class="first"><code class="docutils literal"><span class="pre">json_populate_record(</span></code>
+<code class="docutils literal"><span class="pre">base</span> <span class="pre">anyelement,</span> <span class="pre">from_json</span> <span class="pre">json)</span></code></p>
+<p class="last"><code class="docutils literal"><span class="pre">jsonb_populate_record(</span></code>
+<code class="docutils literal"><span class="pre">base</span> <span class="pre">anyelement,</span> <span class="pre">from_json</span> <span class="pre">jsonb)</span></code></p>
+</td>
+<td>任意元素</td>
+<td>将 <code class="docutils literal"><span class="pre">from_json</span></code> 中的对象展开到一个行里面，
+这个行的各个列与 <code class="docutils literal"><span class="pre">base</span></code>
+中定义的 <code class="docutils literal"><span class="pre">record</span></code> 类型一致。</td>
+<td><code class="docutils literal"><span class="pre">select</span> <span class="pre">*</span> <span class="pre">from</span></code>
+<code class="docutils literal"><span class="pre">json_populate_recordset</span></code>
+<code class="docutils literal"><span class="pre">(null::myrowtype,</span> <span class="pre">'[{&quot;a&quot;:1,&quot;b&quot;:2},{&quot;a&quot;:3,&quot;b&quot;:4}]')</span></code></td>
+<td><div class="first last highlight-python"><div class="highlight"><pre> a | b
+---+---
+ 1 | 2
+ 3 | 4
+</pre></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td><p class="first"><code class="docutils literal"><span class="pre">json_array_elements(json)</span></code></p>
+<p class="last"><code class="docutils literal"><span class="pre">jsonb_array_elements(jsonb)</span></code></p>
+</td>
+<td><p class="first">一系列 <code class="docutils literal"><span class="pre">json</span></code></p>
+<p class="last">一系列 <code class="docutils literal"><span class="pre">jsonb</span></code></p>
+</td>
+<td>将一个 JSON 数组展开为一系列 JSON 值。</td>
+<td><code class="docutils literal"><span class="pre">select</span> <span class="pre">*</span> <span class="pre">from</span> <span class="pre">json_array_elements('[1,true,</span> <span class="pre">[2,false]]')</span></code></td>
+<td><div class="first last highlight-python"><div class="highlight"><pre> value
+-----------
+ 1
+ true
+ [2, false]
+</pre></div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td><p class="first"><code class="docutils literal"><span class="pre">json_array_elements_text(json)</span></code></p>
+<p class="last"><code class="docutils literal"><span class="pre">jsonb_array_elements_text(jsonb)</span></code></p>
+</td>
+<td>一系列 <code class="docutils literal"><span class="pre">text</span></code></td>
+<td>将一个 JSON 数组展开为一系列 <code class="docutils literal"><span class="pre">text</span></code> 值。</td>
+<td><code class="docutils literal"><span class="pre">select</span> <span class="pre">*</span> <span class="pre">from</span> <span class="pre">json_array_elements_text('[&quot;foo&quot;,</span> <span class="pre">&quot;bar&quot;]')</span></code></td>
+<td><div class="first last highlight-python"><div class="highlight"><pre> value
+-----------
+ foo
+ bar
+</pre></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td><p class="first"><code class="docutils literal"><span class="pre">json_typeof(json)</span></code></p>
+<p class="last"><code class="docutils literal"><span class="pre">jsonb_typeof(jsonb)</span></code></p>
+</td>
+<td><code class="docutils literal"><span class="pre">text</span></code></td>
+<td>以字符串形式返回最外层 JSON 值的类型。
+可能出现的类型有 <code class="docutils literal"><span class="pre">object</span></code> 、 <code class="docutils literal"><span class="pre">array</span></code> 、
+<code class="docutils literal"><span class="pre">string</span></code> 、 <code class="docutils literal"><span class="pre">number</span></code> 、 <code class="docutils literal"><span class="pre">boolean</span></code> 和
+<code class="docutils literal"><span class="pre">null</span></code> 。</td>
+<td><code class="docutils literal"><span class="pre">json_typeof('-123.4')</span></code></td>
+<td><code class="docutils literal"><span class="pre">number</span></code></td>
+</tr>
+<tr class="row-even"><td><p class="first"><code class="docutils literal"><span class="pre">json_to_record(json)</span></code></p>
+<p class="last"><code class="docutils literal"><span class="pre">jsonb_to_record(jsonb)</span></code></p>
+</td>
+<td><code class="docutils literal"><span class="pre">record</span></code></td>
+<td>根据一个 JSON 对象来构建一个任意的
+<code class="docutils literal"><span class="pre">record</span></code> 。
+和所有返回 <code class="docutils literal"><span class="pre">record</span></code> 的函数一样，
+调用者必须通过 <code class="docutils literal"><span class="pre">as</span></code> 语句来明确地定义
+<code class="docutils literal"><span class="pre">record</span></code> 的结构。</td>
+<td><code class="docutils literal"><span class="pre">select</span> <span class="pre">*</span> <span class="pre">from</span> <span class="pre">json_to_record</span></code>
+<code class="docutils literal"><span class="pre">('{&quot;a&quot;:1,&quot;b&quot;:[1,2,3],&quot;c&quot;:&quot;bar&quot;}')</span></code>
+<code class="docutils literal"><span class="pre">as</span> <span class="pre">x(a</span> <span class="pre">int,</span> <span class="pre">b</span> <span class="pre">text,</span> <span class="pre">d</span> <span class="pre">text)</span></code></td>
+<td><div class="first last highlight-python"><div class="highlight"><pre> a |    b    | d
+---+---------+---
+ 1 | [1,2,3] |
+</pre></div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td><p class="first"><code class="docutils literal"><span class="pre">json_to_recordset(json)</span></code></p>
+<p class="last"><code class="docutils literal"><span class="pre">jsonb_to_recordset(jsonb)</span></code></p>
+</td>
+<td>一系列 <code class="docutils literal"><span class="pre">record</span></code></td>
+<td>根据一个由 JSON 对象组成的数组，
+构建一个任意的 <code class="docutils literal"><span class="pre">record</span></code> 集合。
+和所有返回 <code class="docutils literal"><span class="pre">record</span></code> 的函数一样，
+调用者必须通过 <code class="docutils literal"><span class="pre">as</span></code> 语句来明确地定义
+<code class="docutils literal"><span class="pre">record</span></code> 的结构。</td>
+<td><code class="docutils literal"><span class="pre">select</span> <span class="pre">*</span> <span class="pre">from</span></code>
+<code class="docutils literal"><span class="pre">json_to_recordset</span></code>
+<code class="docutils literal"><span class="pre">('[{&quot;a&quot;:1,&quot;b&quot;:&quot;foo&quot;},{&quot;a&quot;:&quot;2&quot;,&quot;c&quot;:&quot;bar&quot;}]')</span></code>
+<code class="docutils literal"><span class="pre">as</span> <span class="pre">x(a</span> <span class="pre">int,</span> <span class="pre">b</span> <span class="pre">text);</span></code></td>
+<td><div class="first last highlight-python"><div class="highlight"><pre> a |  b
+---+-----
+ 1 | foo
+ 2 |
+</pre></div>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<hr class="docutils" />
+<p><a class="reference external" href="http://www.postgresql.org/docs/9.4/interactive/functions-aggregate.html">9.20 节</a> 介绍了如何使用聚合计算函数（aggregate function） <code class="docutils literal"><span class="pre">json_agg</span></code> 来将 <code class="docutils literal"><span class="pre">record</span></code> 值聚合为 JSON ，
+以及如何使用聚合函数 <code class="docutils literal"><span class="pre">json_object_agg</span></code> 来将成对的聚合数据（aggregates pairs of values）聚合为一个 JSON 对象。</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>上一个主题</h4>
+  <p class="topless"><a href="index.html"
+                        title="上一章">函数和操作符</a></p>
+  <div role="note" aria-label="source link">
+    <h3>本页</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/part2/chp9/section15.txt"
+            rel="nofollow">显示源代码</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>快速搜索</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="转向" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    输入相关的术语，模块，类或者函数名称进行搜索
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>导航</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="总目录"
+             >索引</a></li>
+        <li class="right" >
+          <a href="index.html" title="函数和操作符"
+             >上一页</a> |</li>
+        <li><a href="../../index.html">PostgreSQL 数据库中文手册</a> &raquo;</li>
+          <li><a href="../index.html" >SQL 语言</a> &raquo;</li>
+          <li><a href="index.html" >函数和操作符</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; 版权所有 2014, 黄健宏（huangz）.
+      由 <a href="http://sphinx-doc.org/">Sphinx</a> 1.3b1 创建。
+    </div>
+  </body>
+</html>
